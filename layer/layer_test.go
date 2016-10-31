@@ -3,6 +3,7 @@ package layer
 import (
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
 	"strings"
@@ -110,5 +111,33 @@ func (s *layerSuite) TestCreateRemove(c *C) {
 		c.Assert(l.Remove(), IsNil)
 		_, err = os.Stat(filepath.Join(dir, "quux"))
 		c.Assert(err, NotNil)
+	})
+}
+
+func (s *layerSuite) TestFilesystemMount(c *C) {
+	inTmpDir(c, func(c *C, dir string) {
+		target := filepath.Join(dir, "quux")
+		c.Assert(os.Mkdir(target, 0700), IsNil)
+
+		fs := &Filesystem{Mountpoint: target}
+		l, err := New("foo", dir)
+		c.Assert(err, IsNil)
+
+		l2, err := New("bar", dir)
+		c.Assert(err, IsNil)
+
+		defer func() {
+			c.Assert(fs.Unmount(), IsNil)
+			out, err := exec.Command("mount", "-t", "overlay").CombinedOutput()
+			c.Assert(err, IsNil)
+			c.Assert(strings.TrimSpace(string(out)), Equals, "")
+		}()
+
+		fs.Layers = []*Layer{l, l2}
+		c.Assert(fs.Mount(filepath.Join(dir, "work")), IsNil)
+		c.Assert(fs.Mounted(), Equals, true)
+		out, err := exec.Command("mount", "-t", "overlay").CombinedOutput()
+		c.Assert(err, IsNil)
+		c.Assert(strings.TrimSpace(string(out)), Not(Equals), "")
 	})
 }
