@@ -42,9 +42,6 @@ func Archive(rel, target string) (string, error) {
 				return err
 			}
 
-			header.Linkname = filepath.Join(target, path)
-			header.Name = filepath.Join(target, path)
-
 			if err := tw.WriteHeader(header); err != nil {
 				return err
 			}
@@ -54,15 +51,14 @@ func Archive(rel, target string) (string, error) {
 				return err
 			}
 
+			defer p.Close()
+
 			if header.Typeflag == tar.TypeReg {
-				_, err = io.Copy(tw, p)
-				if err != nil && err != io.EOF {
-					p.Close()
+				if _, err = io.Copy(tw, p); err != nil && err != io.EOF {
 					return err
 				}
-
-				p.Close()
 			}
+
 			return nil
 		})
 		if err != nil {
