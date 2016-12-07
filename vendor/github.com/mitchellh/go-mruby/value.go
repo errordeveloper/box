@@ -197,6 +197,22 @@ func (v *MrbValue) Hash() *Hash {
 	return &Hash{v}
 }
 
+// TryString returns an empty string + error if there was an error during
+// converting the string.
+func (v *MrbValue) TryString() (string, error) {
+	value, err := C.mrb_obj_as_string(v.state, v.value)
+	if err != nil {
+		return "", err
+	}
+
+	str, err := C.mrb_string_value_ptr(v.state, value)
+	if err != nil {
+		return "", err
+	}
+
+	return C.GoString(str), nil
+}
+
 // String returns the "to_s" result of this value.
 func (v *MrbValue) String() string {
 	value := C.mrb_obj_as_string(v.state, v.value)
