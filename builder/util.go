@@ -3,6 +3,7 @@ package builder
 import (
 	"errors"
 	"fmt"
+	"os"
 
 	mruby "github.com/mitchellh/go-mruby"
 )
@@ -21,7 +22,12 @@ func extractStringArgs(args []*mruby.MrbValue) []string {
 
 	for _, arg := range args {
 		if arg != nil && arg.Type() != mruby.TypeProc {
-			strArgs = append(strArgs, arg.String())
+			str, err := arg.TryString()
+			if err != nil {
+				fmt.Printf("FATAL ERROR: %v\n", err)
+				os.Exit(2)
+			}
+			strArgs = append(strArgs, str)
 		}
 	}
 
